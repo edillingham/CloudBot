@@ -20,7 +20,7 @@ def mfp(text, bot):
     args = text.split()
     user = args[0]
     if(len(args) > 1):
-        dt = parser.parse(args[1])
+        dt = parser.parse(' '.join(args[1:]))
         date = "{}-{}-{}".format(dt.year, dt.month, dt.day)
 
     request = requests.get(scrape_url.format(user, date))
