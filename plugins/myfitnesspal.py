@@ -2,21 +2,33 @@ import locale
 import math
 import requests
 from bs4 import BeautifulSoup
+from dateutil import parser
 
 from cloudbot import hook
 
-scrape_url = "http://www.myfitnesspal.com/food/diary/{}"
+scrape_url = "http://www.myfitnesspal.com/food/diary/{}?date={}"
 
 
 @hook.command('mfp', 'myfitnesspal')
 def mfp(text, bot):
-    """<user> - returns macros from the MyFitnessPal food diary of <user>"""
-    request = requests.get(scrape_url.format(text))
+    """
+    <user> [date]- returns macros from the MyFitnessPal food diary of <user>
+                   optionally, specify [date] to retrieve that day's diary
+    """
+    date = 'today'
+
+    args = text.split()
+    user = args[0]
+    if(len(args) > 1):
+        dt = parser.parse(args[1])
+        date = "{}-{}-{}".format(dt.year, dt.month, dt.day)
+
+    request = requests.get(scrape_url.format(user, date))
 
     if request.status_code != requests.codes.ok:
         return "Failed to fetch info ({})".format(request.status_code)
 
-    output = "Diary for {}: ".format(text)
+    output = "Diary for {}: ".format(user)
 
     try:
         soup = BeautifulSoup(request.text, 'html.parser')
@@ -45,7 +57,7 @@ def mfp(text, bot):
             output += ("{caption}: {total}/{remain}{units} ({pct}%) "
                        .format(**kwargs))
 
-        output += " ({})".format(scrape_url.format(text))
+        output += " ({})".format(scrape_url.format(user, date))
 
     except Exception as e:
         print(e)
@@ -69,7 +81,7 @@ def get_headers(soup):
 
 def get_values(soup, row_class):
     """get values from a specific summary row based on the row class"""
-    locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')  # for number parsing
+    locale.setlocale(locale.LC_ALL, '')  # for number parsing
 
     values = []
 
